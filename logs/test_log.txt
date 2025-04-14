@@ -1,0 +1,8 @@
+[INFO] Starting test run...
+[INFO] TestLogin started
+[ERROR] AssertionError: Expected True but got False
+[INFO] TestLogin failed
+[INFO] TestCheckout started
+[INFO] TestCheckout passed
+[WARNING] Deprecated API used in TestCart
+[INFO] Test run complete
