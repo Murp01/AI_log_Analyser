@@ -1,19 +1,20 @@
+import gradio as gr
 from transformers import pipeline
 
-# Load a pre-trained summarization model
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
-def load_log_file(path):
-    with open(path, 'r') as f:
-        return f.read()
-
-def analyze_log(file_path):
-    log_text = load_log_file(file_path)
-    # Limit input length if needed
-    log_text = log_text[:1024]  # model max input
-    summary = summarizer(log_text, max_length=60, min_length=20, do_sample=False)
+def summarize_log(log_text):
+    trimmed = log_text[:1024]
+    summary = summarizer(trimmed, max_length=60, min_length=20, do_sample=False)
     return summary[0]['summary_text']
 
+iface = gr.Interface(
+    fn=summarize_log,
+    inputs=gr.Textbox(lines=15, placeholder="Paste your log here..."),
+    outputs="text",
+    title="Log Analyzer",
+    description="Paste test logs and get a quick summary of key events or errors."
+)
+
 if __name__ == "__main__":
-    path = "logs/test_log.txt"
-    print("Summarized log:\n", analyze_log(path))
+    iface.launch()
