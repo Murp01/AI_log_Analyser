@@ -43,3 +43,5 @@ This tool reads a test log file and summarizes it using a Hugging Face pre-train
 
 ## Sample Log
 See `logs/test_log.txt` for an example.
+
+Note: Pushed code will automatically update the Space in Hugging Space.
