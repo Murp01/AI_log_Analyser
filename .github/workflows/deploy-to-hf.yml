@@ -23,7 +23,8 @@ jobs:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         git clone https://huggingface.co/spaces/dooehn/log-analyzer hf-space
-        cp -r * hf-space/
+        shopt -s extglob
+        cp -r !(hf-space|.git|.github) hf-space/
         cd hf-space
         git add .
         git commit -m "Sync from GitHub repo on $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
