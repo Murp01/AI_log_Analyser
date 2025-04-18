@@ -81,22 +81,25 @@ def load_sample(name: str) -> str:
     return sample_logs.get(name, "")
 
 
-def read_upload(file_obj: Union[str, Path, gr.File]) -> str:
-    """Handle Gradio 5+ File component which passes a path‑like string."""
-    if file_obj is None:
+def read_upload(file_obj: Union[str, Path, gr.File, list]) -> str:
+    """Read the uploaded file regardless of Gradio version or Space behaviour."""
+    if not file_obj:
         return ""
 
-    # In Gradio 5, file_obj is a path *string* or pathlib.Path to a temp file.
+    # 📦  Spaces (and newer Gradio) wrap the file in a list, even for single uploads
+    if isinstance(file_obj, list):
+        file_obj = file_obj[0]
+
+    # ── 1. Path‑like object (common in Gradio 5) ────────────────────────────
     if isinstance(file_obj, (str, Path)):
-        path = Path(file_obj)
         try:
-            return path.read_text(encoding="utf-8", errors="ignore")
+            return Path(file_obj).read_text(encoding="utf‑8", errors="ignore")
         except Exception:
             return "⚠️ Could not read file."
 
-    # Older style: an IO‑like object with .read()
+    # ── 2. IO‑like object with .read() (older Gradio) ───────────────────────
     try:
-        return file_obj.read().decode("utf-8", errors="ignore")
+        return file_obj.read().decode("utf‑8", errors="ignore")
     except Exception:
         return "⚠️ Unsupported file object type."
 
@@ -109,7 +112,15 @@ with gr.Blocks(title="🧠 Log Summariser") as demo:
         drop = gr.Dropdown(choices=list(sample_logs), label="Sample log")
         load_btn = gr.Button("Load sample")
 
-    file_up = gr.File(label="Upload .log / .txt", file_types=["text", ".log"])
+    #file_up = gr.File(label="Upload .log / .txt", file_types=["text", ".log"])
+    file_up = gr.File(
+        label="Upload .log / .txt",
+        file_types=["text", ".log"],
+        file_count="single",        # 👈 forces a single object
+    )
+
+
+    
     log_box = gr.Textbox(lines=15, label="Log input", placeholder="Paste log here")
 
     summarise_btn = gr.Button("Summarise")
