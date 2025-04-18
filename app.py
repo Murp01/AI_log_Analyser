@@ -32,7 +32,12 @@ sample_logs = {
 [INFO] TestCheckout started
 [INFO] TestCheckout passed
 [WARNING] Deprecated API used in TestCart
-[INFO] Test run complete"""
+[INFO] Test run complete""",
+    "CI Pipeline Failure": """[INFO] Starting CI pipeline...
+[INFO] Step 'Install dependencies' completed
+[ERROR] Step 'Run unit tests' failed: 12 tests failed
+[WARNING] Step 'Upload coverage' skipped due to failures
+[INFO] Pipeline finished with errors""",
 }
 
 # ── 3. helpers ───────────────────────────────────────────────────────────────
