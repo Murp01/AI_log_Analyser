@@ -81,27 +81,57 @@ def load_sample(name: str) -> str:
     return sample_logs.get(name, "")
 
 
-def read_upload(file_obj: Union[str, Path, gr.File, list]) -> str:
-    """Read the uploaded file regardless of Gradio version or Space behaviour."""
+def read_upload(file_obj) -> str:
+    """
+    Accept whatever Gradio passes (bytes, path‑string, dict, list, or file‑like)
+    and return the text content of the uploaded file.
+    """
     if not file_obj:
         return ""
 
-    # 📦  Spaces (and newer Gradio) wrap the file in a list, even for single uploads
+    # 1️⃣  Spaces often wrap the upload in a single‑item list
     if isinstance(file_obj, list):
         file_obj = file_obj[0]
 
-    # ── 1. Path‑like object (common in Gradio 5) ────────────────────────────
+    # 2️⃣  If we already have the raw bytes (type="binary")
+    if isinstance(file_obj, (bytes, bytearray)):
+        return file_obj.decode("utf‑8", errors="ignore")
+
+    # 3️⃣  If Gradio gave us a path string or pathlib.Path
     if isinstance(file_obj, (str, Path)):
         try:
             return Path(file_obj).read_text(encoding="utf‑8", errors="ignore")
         except Exception:
             return "⚠️ Could not read file."
 
-    # ── 2. IO‑like object with .read() (older Gradio) ───────────────────────
-    try:
-        return file_obj.read().decode("utf‑8", errors="ignore")
-    except Exception:
-        return "⚠️ Unsupported file object type."
+    # 4️⃣  If it’s the new FileData dict form
+    if isinstance(file_obj, dict):
+        # try path first
+        path = file_obj.get("path") or file_obj.get("name")
+        if path and Path(path).exists():
+            try:
+                return Path(path).read_text(encoding="utf‑8", errors="ignore")
+            except Exception:
+                pass
+        # fall back to base64 payload
+        if "data" in file_obj:
+            import base64
+            try:
+                decoded = base64.b64decode(file_obj["data"])
+                return decoded.decode("utf‑8", errors="ignore")
+            except Exception:
+                pass
+        return "⚠️ Unknown FileData structure."
+
+    # 5️⃣  Old‑style file‑like object
+    if hasattr(file_obj, "read"):
+        try:
+            return file_obj.read().decode("utf‑8", errors="ignore")
+        except Exception:
+            return "⚠️ Could not read stream."
+
+    return "⚠️ Unsupported upload type."
+
 
 
 # ── 4. Gradio UI ─────────────────────────────────────────────────────────────
@@ -116,7 +146,8 @@ with gr.Blocks(title="🧠 Log Summariser") as demo:
     file_up = gr.File(
         label="Upload .log / .txt",
         file_types=["text", ".log"],
-        file_count="single",        # 👈 forces a single object
+        file_count="single",   # always a single file
+        type="binary",         # send the raw bytes instead of a filepath
     )
 
 
@@ -132,7 +163,8 @@ with gr.Blocks(title="🧠 Log Summariser") as demo:
 
     # wiring
     load_btn.click(load_sample, drop, log_box)
-    file_up.change(read_upload, file_up, log_box)
+    #file_up.change(read_upload, file_up, log_box)
+    file_up.upload(read_upload, file_up, log_box)
     summarise_btn.click(do_summarise, log_box, [summary_box, token_md])
     save_btn.click(save_to_file, summary_box, dl_link)
 
